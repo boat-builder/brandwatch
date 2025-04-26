@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useConversationalKeywords } from '@/api/hooks/useConversationalKeywords';
-import { ConversationalKeywordsRequest, ConversationalKeywordsResponse, TopicKeywords } from '@/api/types';
+import { ConversationalKeywordsRequest, ConversationalKeywordsResponse, ConversationalKeywordTopic } from '@/api/types';
 
 export default function KeywordForm() {
   const [domain, setDomain] = useState('');
@@ -36,11 +36,16 @@ export default function KeywordForm() {
     // Filter out empty topics
     const filteredTopics = topics.filter(topic => topic.trim() !== '');
     
-    if (domain && description && filteredTopics.length > 0) {
+    if (domain && filteredTopics.length > 0) {
+      // Format topics according to the new API structure
+      const formattedTopics = filteredTopics.map(topic => ({
+        Topic: topic,
+        ConversationalKeywords: []
+      }));
+      
       const data: ConversationalKeywordsRequest = {
         domain,
-        description,
-        topics: filteredTopics
+        topics: formattedTopics
       };
       
       try {
@@ -142,7 +147,7 @@ export default function KeywordForm() {
       {results && results.results && (
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-4">Conversational Keywords</h3>
-          {results.results.map((result: TopicKeywords, index: number) => (
+          {results.results.map((result: ConversationalKeywordTopic, index: number) => (
             <div key={index} className="mb-4 p-4 bg-gray-50 rounded-md">
               <h4 className="font-medium text-lg mb-2">{result.Topic}</h4>
               <ul className="list-disc pl-5 space-y-1">

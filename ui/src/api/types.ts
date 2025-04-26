@@ -1,24 +1,24 @@
 // API types for the conversational keywords endpoint
 
-// Request type for conversational keywords
-export interface ConversationalKeywordsRequest {
-  domain: string;
-  description: string;
-  topics: string[];
-}
-
 // KeywordWithIntent defines a structure for keyword with its intent
 export interface KeywordWithIntent {
   keyword: string;
   intent: string;
 }
 
-// Response type for conversational keywords
-export interface TopicKeywords {
+// ConversationalKeywordTopic defines the structure for each topic's result
+export interface ConversationalKeywordTopic {
   Topic: string;
   ConversationalKeywords: KeywordWithIntent[];
 }
 
+// Request type for conversational keywords
+export interface ConversationalKeywordsRequest {
+  domain: string;
+  topics: ConversationalKeywordTopic[];
+}
+
+// Response type for conversational keywords
 export interface ConversationalKeywordsResponse {
-  results: TopicKeywords[];
+  results: ConversationalKeywordTopic[];
 }

@@ -6,7 +6,7 @@ export const keywordService = {
    * Get conversational keywords for topics
    */
   getConversationalKeywords: async (data: ConversationalKeywordsRequest) => {
-    return apiRequest<ConversationalKeywordsResponse>('/conversational-keywords', {
+    return apiRequest<ConversationalKeywordsResponse>('/analyze', {
       method: 'POST',
       body: JSON.stringify(data),
     });

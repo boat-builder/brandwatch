@@ -5,12 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useConversationalKeywords } from "@/api/hooks/useConversationalKeywords";
-import { TopicKeywords } from "@/api/types";
+import { ConversationalKeywordTopic } from "@/api/types";
 
 export default function Home() {
   const [domain, setDomain] = useState("");
   const [topics, setTopics] = useState([""]);
-  const [results, setResults] = useState<TopicKeywords[] | null>(null);
+  const [results, setResults] = useState<ConversationalKeywordTopic[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -58,10 +58,15 @@ export default function Home() {
     
     if (domain && filteredTopics.length > 0) {
       try {
+        // Format topics according to the new API structure
+        const formattedTopics = filteredTopics.map(topic => ({
+          Topic: topic,
+          ConversationalKeywords: []
+        }));
+
         const response = await keywordsMutation.mutateAsync({
           domain,
-          description: "", // Empty description as requested
-          topics: filteredTopics
+          topics: formattedTopics
         });
         
         if (response.data?.results) {
@@ -215,7 +220,7 @@ export default function Home() {
                       {result.Topic}
                     </h4>
                     <ul className="space-y-2">
-                      {result.ConversationalKeywords.map((keywordItem, keywordIndex) => (
+                      {result.ConversationalKeywords.map((keywordItem, keywordIndex: number) => (
                         <li key={keywordIndex} className="flex items-start">
                           <span className="mr-2 text-blue-500">•</span>
                           <span className="text-gray-700">
