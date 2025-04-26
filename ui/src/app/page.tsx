@@ -215,10 +215,15 @@ export default function Home() {
                       {result.Topic}
                     </h4>
                     <ul className="space-y-2">
-                      {result.ConversationalKeywords.map((keyword, keywordIndex) => (
+                      {result.ConversationalKeywords.map((keywordItem, keywordIndex) => (
                         <li key={keywordIndex} className="flex items-start">
                           <span className="mr-2 text-blue-500">•</span>
-                          <span className="text-gray-700">{keyword}</span>
+                          <span className="text-gray-700">
+                            {keywordItem.keyword}
+                            {keywordItem.intent && (
+                              <span className="ml-2 text-xs text-gray-500">({keywordItem.intent})</span>
+                            )}
+                          </span>
                         </li>
                       ))}
                     </ul>

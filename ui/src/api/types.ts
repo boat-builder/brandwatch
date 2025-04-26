@@ -7,10 +7,16 @@ export interface ConversationalKeywordsRequest {
   topics: string[];
 }
 
+// KeywordWithIntent defines a structure for keyword with its intent
+export interface KeywordWithIntent {
+  keyword: string;
+  intent: string;
+}
+
 // Response type for conversational keywords
 export interface TopicKeywords {
   Topic: string;
-  ConversationalKeywords: string[];
+  ConversationalKeywords: KeywordWithIntent[];
 }
 
 export interface ConversationalKeywordsResponse {
