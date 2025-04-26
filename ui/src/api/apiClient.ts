@@ -1,7 +1,7 @@
 // Base configuration for API requests
 
-// const API_BASE_URL = 'https://mac-fde-689.lockjaw.link';
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = 'https://mac-fde-689.lockjaw.link';
+// const API_BASE_URL = 'http://localhost:8080';
 
 export interface ApiResponse<T> {
   data?: T;
