@@ -1,120 +1,89 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { TopicKeywordPerformance } from "@/components/TopicKeywordPerformance";
 import { TopicKeywordData } from "@/types/TopicKeywordData";
-
-// Dummy data for testing - containing only ChatGPT data
-const dummyKeywordData: TopicKeywordData[] = [
-  {
-    id: '1',
-    name: 'seo tools',
-    searchEngines: {
-      'ChatGPT': {
-        totalAppearances: 1200,
-        distinctBrands: 45,
-        totalLinks: 230,
-        avgVisibilityPosition: 8.5,
-        userLinkAppearances: 15,
-        weeklyHistory: [
-          { week: '2024-01-01', appearances: 100 },
-          { week: '2024-01-08', appearances: 110 },
-          { week: '2024-01-15', appearances: 95 },
-          { week: '2024-01-22', appearances: 120 },
-          { week: '2024-01-29', appearances: 130 },
-        ]
-      }
-    }
-  },
-  {
-    id: '2',
-    name: 'keyword research',
-    searchEngines: {
-      'ChatGPT': {
-        totalAppearances: 850,
-        distinctBrands: 32,
-        totalLinks: 180,
-        avgVisibilityPosition: 6.2,
-        userLinkAppearances: 8,
-        weeklyHistory: [
-          { week: '2024-01-01', appearances: 80 },
-          { week: '2024-01-08', appearances: 85 },
-          { week: '2024-01-15', appearances: 90 },
-          { week: '2024-01-22', appearances: 75 },
-          { week: '2024-01-29', appearances: 95 },
-        ]
-      }
-    }
-  },
-  {
-    id: '3',
-    name: 'content marketing',
-    searchEngines: {
-      'ChatGPT': {
-        totalAppearances: 1500,
-        distinctBrands: 52,
-        totalLinks: 280,
-        avgVisibilityPosition: 7.8,
-        userLinkAppearances: 12,
-        weeklyHistory: [
-          { week: '2024-01-01', appearances: 120 },
-          { week: '2024-01-08', appearances: 130 },
-          { week: '2024-01-15', appearances: 140 },
-          { week: '2024-01-22', appearances: 125 },
-          { week: '2024-01-29', appearances: 135 },
-        ]
-      }
-    }
-  },
-  {
-    id: '4',
-    name: 'backlink analysis',
-    searchEngines: {
-      'ChatGPT': {
-        totalAppearances: 650,
-        distinctBrands: 28,
-        totalLinks: 150,
-        avgVisibilityPosition: 9.1,
-        userLinkAppearances: 6,
-        weeklyHistory: [
-          { week: '2024-01-01', appearances: 60 },
-          { week: '2024-01-08', appearances: 65 },
-          { week: '2024-01-15', appearances: 70 },
-          { week: '2024-01-22', appearances: 55 },
-          { week: '2024-01-29', appearances: 75 },
-        ]
-      }
-    }
-  },
-  {
-    id: '5',
-    name: 'rank tracking',
-    searchEngines: {
-      'ChatGPT': {
-        totalAppearances: 950,
-        distinctBrands: 38,
-        totalLinks: 200,
-        avgVisibilityPosition: 5.5,
-        userLinkAppearances: 10,
-        weeklyHistory: [
-          { week: '2024-01-01', appearances: 90 },
-          { week: '2024-01-08', appearances: 95 },
-          { week: '2024-01-15', appearances: 100 },
-          { week: '2024-01-22', appearances: 85 },
-          { week: '2024-01-29', appearances: 105 },
-        ]
-      }
-    }
-  }
-];
+import { transformApiResponseToUiFormat } from "@/utils/dataTransformer";
+import { ConversationalKeywordsResponse } from "@/api/types";
 
 export default function Dashboard() {
   const router = useRouter();
+  const [keywordData, setKeywordData] = useState<TopicKeywordData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [domain, setDomain] = useState("");
+  
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const loadBrandData = () => {
+      setIsLoading(true);
+      try {
+        const storedData = localStorage.getItem("brandData");
+        
+        if (storedData) {
+          const brandData = JSON.parse(storedData);
+          setDomain(brandData.domain || "");
+          
+          // Transform the API response to the format expected by the TopicKeywordPerformance component
+          if (brandData.results && brandData.results.length > 0) {
+            console.log('Brand data from localStorage:', brandData);
+            const apiResponse: ConversationalKeywordsResponse = {
+              results: brandData.results
+            };
+            
+            const transformedData = transformApiResponseToUiFormat(apiResponse);
+            console.log('Transformed data for UI:', transformedData);
+            setKeywordData(transformedData);
+          } else {
+            console.log('No results found in brand data');
+          }
+        } else {
+          // Redirect to home if no data is found
+          router.push("/");
+        }
+      } catch (error) {
+        console.error("Error loading brand data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadBrandData();
+  }, [router]);
   
   const handleReset = () => {
     localStorage.removeItem("brandData");
     router.push("/");
+  };
+
+  const handleRefresh = async () => {
+    // In a real app, you would typically re-fetch data from the API here
+    setIsLoading(true);
+    
+    // For now, we'll just re-load from localStorage to simulate a refresh
+    setTimeout(() => {
+      try {
+        const storedData = localStorage.getItem("brandData");
+        if (storedData) {
+          const brandData = JSON.parse(storedData);
+          
+          // Transform the API response
+          if (brandData.results && brandData.results.length > 0) {
+            const apiResponse: ConversationalKeywordsResponse = {
+              results: brandData.results
+            };
+            
+            const transformedData = transformApiResponseToUiFormat(apiResponse);
+            setKeywordData(transformedData);
+          }
+        }
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 1000); // Simulate network delay
   };
 
   return (
@@ -133,6 +102,16 @@ export default function Dashboard() {
             <h1 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-amber-500">
               Brand Watch
             </h1>
+            <button 
+              onClick={handleRefresh}
+              className="ml-3 flex items-center text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-700 px-2 py-1 rounded-full shadow-sm transition-all hover:shadow-md"
+              title="Get latest data"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+              </svg>
+              Get Latest
+            </button>
           </div>
           <div className="flex items-center space-x-4">
             <button 
@@ -154,8 +133,8 @@ export default function Dashboard() {
           {/* Topic/Keyword Performance Section */}
           <TopicKeywordPerformance 
             type="topic"
-            data={dummyKeywordData}
-            isLoading={false}
+            data={keywordData}
+            isLoading={isLoading}
           />
         </div>
       </main>

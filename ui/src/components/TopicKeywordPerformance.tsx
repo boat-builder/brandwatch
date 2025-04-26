@@ -37,22 +37,55 @@ export function TopicKeywordPerformance({
 
   const title = `${type.charAt(0).toUpperCase() + type.slice(1)} Performance`;
 
-  // Process data to extract ChatGPT metrics only
+  // Process data to use the first available search engine if ChatGPT not available
   const processedData = React.useMemo(() => {
+    console.log('Processing data for display:', data);
+    
     return data.map(item => {
-      // Get only ChatGPT data
-      const chatGptData = item.searchEngines['ChatGPT'] || {
-        totalAppearances: 0,
-        distinctBrands: 0,
-        totalLinks: 0,
-        avgVisibilityPosition: 0,
-        userLinkAppearances: 0,
-        weeklyHistory: []
-      };
-
+      // Try to get a search engine to use as aggregated data
+      let aggregatedData = null;
+      
+      // First try to use ChatGPT data
+      if (item.searchEngines['ChatGPT']) {
+        aggregatedData = item.searchEngines['ChatGPT'];
+      } 
+      // Then try GoogleAI
+      else if (item.searchEngines['GoogleAI']) {
+        aggregatedData = item.searchEngines['GoogleAI'];
+      }
+      // Then use the first available search engine
+      else {
+        const engines = Object.keys(item.searchEngines);
+        if (engines.length > 0) {
+          aggregatedData = item.searchEngines[engines[0]];
+        }
+      }
+      
+      // Fallback to empty data if no engines found
+      if (!aggregatedData) {
+        aggregatedData = {
+          totalAppearances: 0,
+          distinctBrands: 0,
+          totalLinks: 0,
+          avgVisibilityPosition: 0,
+          userLinkAppearances: 0,
+          history: []
+        };
+      }
+      
+      // Log important info about this item
+      console.log(`Item ${item.name} using engine:`, 
+                 aggregatedData === item.searchEngines['ChatGPT'] ? 'ChatGPT' : 
+                 aggregatedData === item.searchEngines['GoogleAI'] ? 'GoogleAI' : 
+                 'Other');
+      
+      if (!item.aggregated) {
+        console.log(`Adding aggregated data to item ${item.name}`);
+      }
+      
       return {
         ...item,
-        aggregated: chatGptData
+        aggregated: aggregatedData
       };
     });
   }, [data]);
@@ -75,9 +108,22 @@ export function TopicKeywordPerformance({
 
   // Auto-select first 5 elements and ensure selectedIds only contains valid IDs
   React.useEffect(() => {
+    console.log('Data for selection:', data);
+    console.log('Paginated data:', paginatedData);
+    
+    // Always select all available items if we have 5 or fewer
+    if (data.length > 0 && data.length <= 5) {
+      const allIds = data.map(item => item.id);
+      console.log('Auto-selecting all IDs since we have 5 or fewer:', allIds);
+      setSelectedIds(allIds);
+      return;
+    }
+    
     const validIds = new Set(data.map(item => item.id));
+    console.log('Valid IDs:', Array.from(validIds));
     
     setSelectedIds(prev => {
+      console.log('Previous selected IDs:', prev);
       const currentSelectedIds = prev.filter(id => validIds.has(id));
       
       if (currentSelectedIds.length < 5 && paginatedData.length > 0) {
@@ -86,6 +132,7 @@ export function TopicKeywordPerformance({
           .map(item => item.id)
           .filter(id => !currentSelectedIds.includes(id));
         
+        console.log('New IDs to add:', newIds);
         return [...currentSelectedIds, ...newIds];
       } else {
         return currentSelectedIds;
@@ -95,25 +142,55 @@ export function TopicKeywordPerformance({
 
   // Get data for chart
   const chartData = React.useMemo(() => {
-    if (!selectedIds.length) return [];
+    console.log('Building chart data, selected IDs:', selectedIds);
+    if (!selectedIds.length) {
+      console.log('No selected IDs, returning empty chart data');
+      return [];
+    }
     
     const selectedItems = processedData.filter(item => selectedIds.includes(item.id));
-    const allWeeks = new Set<string>();
+    console.log('Selected items:', selectedItems);
+    
+    if (selectedItems.length === 0) {
+      console.log('No items found matching selected IDs');
+      return [];
+    }
+    
+    // Check if selectedItems have aggregated data
+    selectedItems.forEach(item => {
+      if (!item.aggregated) {
+        console.warn('Missing aggregated data for item:', item.name);
+      } else if (!item.aggregated.history || !Array.isArray(item.aggregated.history)) {
+        console.warn('Missing or invalid history array for item:', item.name, item.aggregated);
+      } else {
+        console.log(`Item ${item.name} has ${item.aggregated.history.length} history points`);
+      }
+    });
+    
+    const allTimepoints = new Set<string>();
     
     selectedItems.forEach(item => {
-      item.aggregated.weeklyHistory.forEach(h => allWeeks.add(h.week));
+      if (item.aggregated && item.aggregated.history) {
+        item.aggregated.history.forEach(h => allTimepoints.add(h.timepoint));
+      }
     });
     
-    const sortedWeeks = Array.from(allWeeks).sort();
+    console.log('All timepoints found:', Array.from(allTimepoints));
+    const sortedTimepoints = Array.from(allTimepoints).sort();
     
-    return sortedWeeks.map(week => {
-      const weekData: { [key: string]: number | string } = { week };
+    const result = sortedTimepoints.map(timepoint => {
+      const timepointData: { [key: string]: number | string } = { timepoint };
       selectedItems.forEach(item => {
-        const historyPoint = item.aggregated.weeklyHistory.find(h => h.week === week);
-        weekData[item.name] = historyPoint?.appearances || 0;
+        if (item.aggregated && item.aggregated.history) {
+          const historyPoint = item.aggregated.history.find(h => h.timepoint === timepoint);
+          timepointData[item.name] = historyPoint?.appearances || 0;
+        }
       });
-      return weekData;
+      return timepointData;
     });
+    
+    console.log('Final chart data:', result);
+    return result;
   }, [processedData, selectedIds]);
 
   // Fixed colors for the first 10 items
@@ -207,24 +284,37 @@ export function TopicKeywordPerformance({
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             {selectedIds.length > 0 ? (
-              <LineChart data={chartData}>
+              <LineChart 
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="week" />
+                <XAxis 
+                  dataKey="timepoint" 
+                  padding={{ left: 20, right: 20 }} 
+                />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                {data
+                {processedData
                   .filter(item => selectedIds.includes(item.id))
-                  .map((item, index) => (
-                    <Line
-                      key={item.id}
-                      type="monotone"
-                      dataKey={item.name}
-                      stroke={getItemColor(index)}
-                      strokeWidth={1}
-                      dot={false}
-                    />
-                  ))}
+                  .map((item, index) => {
+                    console.log(`Creating Line for item: ${item.name} with data:`, 
+                      item.aggregated?.history || 'No history');
+                    return (
+                      <Line
+                        key={item.id}
+                        name={item.name}
+                        type="monotone"
+                        dataKey={item.name}
+                        stroke={getItemColor(index)}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                        isAnimationActive={true}
+                      />
+                    );
+                  })}
               </LineChart>
             ) : (
               <div className="flex items-center justify-center h-full">

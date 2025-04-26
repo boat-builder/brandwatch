@@ -4,8 +4,8 @@ export interface SearchEngineData {
   totalLinks: number;
   avgVisibilityPosition: number;
   userLinkAppearances: number;
-  weeklyHistory: {
-    week: string;
+  history: {
+    timepoint: string;
     appearances: number;
   }[];
 }
