@@ -146,8 +146,8 @@ export default function KeywordForm() {
             <div key={index} className="mb-4 p-4 bg-gray-50 rounded-md">
               <h4 className="font-medium text-lg mb-2">{result.Topic}</h4>
               <ul className="list-disc pl-5 space-y-1">
-                {result.ConversationalKeywords.map((keyword: string, idx: number) => (
-                  <li key={idx} className="text-gray-700">{keyword}</li>
+                {result.ConversationalKeywords.map((keywordObj, idx: number) => (
+                  <li key={idx} className="text-gray-700">{keywordObj.keyword} <span className="text-xs text-gray-500">({keywordObj.intent})</span></li>
                 ))}
               </ul>
             </div>
