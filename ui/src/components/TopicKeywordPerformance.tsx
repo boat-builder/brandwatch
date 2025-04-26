@@ -39,7 +39,6 @@ export function TopicKeywordPerformance({
 
   // Process data to use the first available search engine if ChatGPT not available
   const processedData = React.useMemo(() => {
-    console.log('Processing data for display:', data);
     
     return data.map(item => {
       // Try to get a search engine to use as aggregated data
@@ -66,18 +65,11 @@ export function TopicKeywordPerformance({
         aggregatedData = {
           totalAppearances: 0,
           distinctBrands: 0,
-          totalLinks: 0,
           avgVisibilityPosition: 0,
-          userLinkAppearances: 0,
           history: []
         };
       }
       
-      // Log important info about this item
-      console.log(`Item ${item.name} using engine:`, 
-                 aggregatedData === item.searchEngines['ChatGPT'] ? 'ChatGPT' : 
-                 aggregatedData === item.searchEngines['GoogleAI'] ? 'GoogleAI' : 
-                 'Other');
       
       if (!item.aggregated) {
         console.log(`Adding aggregated data to item ${item.name}`);
@@ -108,22 +100,16 @@ export function TopicKeywordPerformance({
 
   // Auto-select first 5 elements and ensure selectedIds only contains valid IDs
   React.useEffect(() => {
-    console.log('Data for selection:', data);
-    console.log('Paginated data:', paginatedData);
-    
     // Always select all available items if we have 5 or fewer
     if (data.length > 0 && data.length <= 5) {
       const allIds = data.map(item => item.id);
-      console.log('Auto-selecting all IDs since we have 5 or fewer:', allIds);
       setSelectedIds(allIds);
       return;
     }
     
     const validIds = new Set(data.map(item => item.id));
-    console.log('Valid IDs:', Array.from(validIds));
     
     setSelectedIds(prev => {
-      console.log('Previous selected IDs:', prev);
       const currentSelectedIds = prev.filter(id => validIds.has(id));
       
       if (currentSelectedIds.length < 5 && paginatedData.length > 0) {
@@ -132,7 +118,6 @@ export function TopicKeywordPerformance({
           .map(item => item.id)
           .filter(id => !currentSelectedIds.includes(id));
         
-        console.log('New IDs to add:', newIds);
         return [...currentSelectedIds, ...newIds];
       } else {
         return currentSelectedIds;
@@ -142,28 +127,22 @@ export function TopicKeywordPerformance({
 
   // Get data for chart
   const chartData = React.useMemo(() => {
-    console.log('Building chart data, selected IDs:', selectedIds);
     if (!selectedIds.length) {
-      console.log('No selected IDs, returning empty chart data');
       return [];
     }
     
     const selectedItems = processedData.filter(item => selectedIds.includes(item.id));
-    console.log('Selected items:', selectedItems);
     
     if (selectedItems.length === 0) {
-      console.log('No items found matching selected IDs');
       return [];
     }
     
     // Check if selectedItems have aggregated data
     selectedItems.forEach(item => {
       if (!item.aggregated) {
-        console.warn('Missing aggregated data for item:', item.name);
+        console.info('Missing aggregated data for item:', item.name);
       } else if (!item.aggregated.history || !Array.isArray(item.aggregated.history)) {
-        console.warn('Missing or invalid history array for item:', item.name, item.aggregated);
-      } else {
-        console.log(`Item ${item.name} has ${item.aggregated.history.length} history points`);
+        console.info('Missing or invalid history array for item:', item.name, item.aggregated);
       }
     });
     
@@ -175,7 +154,6 @@ export function TopicKeywordPerformance({
       }
     });
     
-    console.log('All timepoints found:', Array.from(allTimepoints));
     const sortedTimepoints = Array.from(allTimepoints).sort();
     
     const result = sortedTimepoints.map(timepoint => {
@@ -189,7 +167,6 @@ export function TopicKeywordPerformance({
       return timepointData;
     });
     
-    console.log('Final chart data:', result);
     return result;
   }, [processedData, selectedIds]);
 
@@ -308,9 +285,9 @@ export function TopicKeywordPerformance({
                         type="monotone"
                         dataKey={item.name}
                         stroke={getItemColor(index)}
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                        strokeWidth={1}
+                        dot={false}
+                        activeDot={false}
                         isAnimationActive={true}
                       />
                     );
@@ -349,8 +326,6 @@ export function TopicKeywordPerformance({
                 <th className="text-left py-2 px-4 text-sm font-normal text-gray-500">Appearances</th>
                 <th className="text-left py-2 px-4 text-sm font-normal text-gray-500">Appeared Position</th>
                 <th className="text-left py-2 px-4 text-sm font-normal text-gray-500">Total Brands Appeared</th>
-                <th className="text-left py-2 px-4 text-sm font-normal text-gray-500">Total Links</th>
-                <th className="text-left py-2 px-4 text-sm font-normal text-gray-500">Your Domain in Links</th>
                 <th className="text-center py-2 px-4 text-sm font-normal text-gray-500">Shown In Graph</th>
               </tr>
             </thead>
@@ -364,8 +339,6 @@ export function TopicKeywordPerformance({
                   <td className="py-2 px-4 text-sm">{item.aggregated.totalAppearances}</td>
                   <td className="py-2 px-4 text-sm">{item.aggregated.avgVisibilityPosition.toFixed(1)}</td>
                   <td className="py-2 px-4 text-sm">{item.aggregated.distinctBrands}</td>
-                  <td className="py-2 px-4 text-sm">{item.aggregated.totalLinks}</td>
-                  <td className="py-2 px-4 text-sm">{item.aggregated.userLinkAppearances}</td>
                   <td className="py-2 px-4 text-sm text-center">
                     <Checkbox
                       checked={selectedIds.includes(item.id)}

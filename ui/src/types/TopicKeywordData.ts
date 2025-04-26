@@ -1,9 +1,7 @@
 export interface SearchEngineData {
   totalAppearances: number;
   distinctBrands: number;
-  totalLinks: number;
   avgVisibilityPosition: number;
-  userLinkAppearances: number;
   history: {
     timepoint: string;
     appearances: number;

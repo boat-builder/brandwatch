@@ -16,9 +16,7 @@ export interface HistoryPoint {
 export interface SearchEngineStats {
   totalAppearances: number;
   distinctBrands: number;
-  totalLinks: number;
   avgVisibilityPosition: number;
-  userLinkAppearances: number;
   history: HistoryPoint[];
 }
 

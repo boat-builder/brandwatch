@@ -84,7 +84,7 @@ export default function Home() {
           setError(response.error.message);
         }
       } catch (err) {
-        setError("Failed to optimize your brand performance. Please try again.");
+        setError("Failed to analyze your brand performance. Please try again.");
         console.error("Error:", err);
       } finally {
         setIsSubmitting(false);
@@ -196,7 +196,7 @@ export default function Home() {
                 disabled={isSubmitting}
                 className="w-full flex justify-center py-4 px-6 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-gradient-to-r from-blue-600 to-amber-500 hover:from-blue-700 hover:to-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? "Optimizing..." : "Optimize Your Brand Performance"}
+                {isSubmitting ? "Analyzing..." : "Monitor Your Brand Performance"}
               </button>
             </div>
           </form>
