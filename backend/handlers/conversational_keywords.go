@@ -12,8 +12,8 @@ import (
 
 // ConversationalKeywordsRequest defines the request structure for the API
 type ConversationalKeywordsRequest struct {
-	Domain string   `json:"domain"`
-	Topics []string `json:"topics"`
+	Domain string                       `json:"domain"`
+	Topics []ConversationalKeywordTopic `json:"topics"`
 }
 
 // KeywordWithIntent defines a structure for storing keyword with its intent
@@ -64,6 +64,7 @@ type GeneratedConversationalKeywords struct {
 
 // HandleConversationalKeywords handles the /conversational-keywords endpoint
 func HandleConversationalKeywords(c echo.Context, llm *agentpod.LLM) error {
+	fmt.Println("Request received...")
 	// Parse request body
 	var request ConversationalKeywordsRequest
 	if err := c.Bind(&request); err != nil {
@@ -88,9 +89,16 @@ func HandleConversationalKeywords(c echo.Context, llm *agentpod.LLM) error {
 		Strict:      openai.Bool(true),
 	}
 
-	// Process each topic and generate conversational keywords
-	for _, topic := range request.Topics {
-		userMessage := openai.UserMessage(fmt.Sprintf("Generate 1-5 conversational keywords for the topic '%s'", topic))
+	// Process each topic and generate conversational keywords if needed
+	for _, topicData := range request.Topics {
+		// If conversational keywords already exist for this topic, add it directly to response
+		if len(topicData.ConversationalKeywords) > 0 {
+			response.Results = append(response.Results, topicData)
+			continue
+		}
+
+		// If conversational keywords don't exist, generate them
+		userMessage := openai.UserMessage(fmt.Sprintf("Generate 1-5 conversational keywords for the topic '%s'", topicData.Topic))
 		params := openai.ChatCompletionNewParams{
 			Messages: []openai.ChatCompletionMessageParamUnion{developerMessage, userMessage},
 			Model:    llm.GenerationModel,
@@ -136,10 +144,13 @@ func HandleConversationalKeywords(c echo.Context, llm *agentpod.LLM) error {
 			})
 		}
 
-		response.Results = append(response.Results, ConversationalKeywordTopic{
-			Topic:                  topic,
+		// Create result with generated keywords
+		topicResult := ConversationalKeywordTopic{
+			Topic:                  topicData.Topic,
 			ConversationalKeywords: keywordsWithIntent,
-		})
+		}
+
+		response.Results = append(response.Results, topicResult)
 	}
 
 	return c.JSON(http.StatusOK, response)

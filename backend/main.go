@@ -38,7 +38,7 @@ func main() {
 	})
 
 	// Register conversational-keywords handler
-	e.POST("/conversational-keywords", func(c echo.Context) error {
+	e.POST("/analyze", func(c echo.Context) error {
 		return handlers.HandleConversationalKeywords(c, llm)
 	})
 
