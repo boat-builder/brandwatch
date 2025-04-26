@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useDebounce } from "@/hooks/useDebounce";
-import { TopicKeywordData, SearchEngineData } from "@/types/TopicKeywordData";
+import { TopicKeywordData } from "@/types/TopicKeywordData";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface TopicKeywordPerformanceProps {

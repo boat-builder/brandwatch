@@ -2,13 +2,13 @@
 
 import { FormEvent, useState } from 'react';
 import { useConversationalKeywords } from '@/api/hooks/useConversationalKeywords';
-import { ConversationalKeywordsRequest } from '@/api/types';
+import { ConversationalKeywordsRequest, ConversationalKeywordsResponse, TopicKeywords } from '@/api/types';
 
 export default function KeywordForm() {
   const [domain, setDomain] = useState('');
   const [description, setDescription] = useState('');
   const [topics, setTopics] = useState<string[]>(['']);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<ConversationalKeywordsResponse | null>(null);
 
   const keywordsMutation = useConversationalKeywords();
 
@@ -45,7 +45,7 @@ export default function KeywordForm() {
       
       try {
         const response = await keywordsMutation.mutateAsync(data);
-        setResults(response.data);
+        setResults(response.data || null);
       } catch (error) {
         console.error('Error fetching conversational keywords:', error);
       }
@@ -142,7 +142,7 @@ export default function KeywordForm() {
       {results && results.results && (
         <div className="mt-6">
           <h3 className="text-xl font-semibold mb-4">Conversational Keywords</h3>
-          {results.results.map((result: any, index: number) => (
+          {results.results.map((result: TopicKeywords, index: number) => (
             <div key={index} className="mb-4 p-4 bg-gray-50 rounded-md">
               <h4 className="font-medium text-lg mb-2">{result.Topic}</h4>
               <ul className="list-disc pl-5 space-y-1">

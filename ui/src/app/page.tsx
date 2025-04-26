@@ -120,7 +120,7 @@ export default function Home() {
               Get Inbound Leads from AI Search
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Enter your brand's domain and the topics you want to rank for in AI search engines
+              Enter your brand&apos;s domain and the topics you want to rank for in AI search engines
             </p>
           </div>
 
@@ -128,7 +128,7 @@ export default function Home() {
             {/* Domain input - larger and more prominent */}
             <div className="space-y-4">
               <label className="block text-lg font-medium text-gray-700">
-                Your Brand's Domain
+                Your Brand&apos;s Domain
               </label>
               <div className="relative">
                 <input
