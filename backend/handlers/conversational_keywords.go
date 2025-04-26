@@ -154,7 +154,7 @@ func generateKeywordsForTopic(ctx echo.Context, llm *agentpod.LLM, topicData Con
 	}, nil
 }
 
-func getSearchEngineStats(llm *agentpod.LLM, response string) (SearchEngineStatsParserStruct, error) {
+func getSearchEngineStats(llm *agentpod.LLM, response string, domain string) (SearchEngineStatsParserStruct, error) {
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 		Name:        "searchEngineStats",
 		Description: openai.String("Statistics about the search engine results"),
@@ -162,8 +162,11 @@ func getSearchEngineStats(llm *agentpod.LLM, response string) (SearchEngineStats
 		Strict:      openai.Bool(true),
 	}
 	params := openai.ChatCompletionNewParams{
-		Messages: []openai.ChatCompletionMessageParamUnion{openai.DeveloperMessage("anaylze the response from previous search result and find out the stats user is looking for"), openai.UserMessage(response)},
-		Model:    llm.GenerationModel,
+		Messages: []openai.ChatCompletionMessageParamUnion{
+			openai.DeveloperMessage("anaylze the response from previous search result and find out the stats user is looking for, for the provided domain"),
+			openai.UserMessage(fmt.Sprintf("domain: %s\nSearch response: %s", domain, response)),
+		},
+		Model: llm.GenerationModel,
 		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 			OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{
 				JSONSchema: schemaParam,
@@ -183,7 +186,7 @@ func getSearchEngineStats(llm *agentpod.LLM, response string) (SearchEngineStats
 	return searchEngineStats, nil
 }
 
-func searchKeyword(llm *agentpod.LLM, keyword string) (SearchEngineStats, error) {
+func searchKeyword(llm *agentpod.LLM, keyword string, domain string) (SearchEngineStats, error) {
 	// Create test parameters for the Response API
 	params := responses.ResponseNewParams{
 		Model: shared.ResponsesModel("gpt-4o"),
@@ -222,7 +225,7 @@ func searchKeyword(llm *agentpod.LLM, keyword string) (SearchEngineStats, error)
 	}
 
 	// Get stats from the response text
-	parserStruct, err := getSearchEngineStats(llm, response.OutputText())
+	parserStruct, err := getSearchEngineStats(llm, response.OutputText(), domain)
 	if err != nil {
 		return SearchEngineStats{}, err
 	}
@@ -242,7 +245,7 @@ func searchKeyword(llm *agentpod.LLM, keyword string) (SearchEngineStats, error)
 	}, nil
 }
 
-func generateChatGPTSearchStats(topicStruct ConversationalKeywordTopic, llm *agentpod.LLM) SearchEngineStats {
+func generateChatGPTSearchStats(topicStruct ConversationalKeywordTopic, llm *agentpod.LLM, domain string) SearchEngineStats {
 	// Get all keywords from the topic
 	keywords := make([]string, 0, len(topicStruct.ConversationalKeywords))
 	for _, kw := range topicStruct.ConversationalKeywords {
@@ -272,7 +275,7 @@ func generateChatGPTSearchStats(topicStruct ConversationalKeywordTopic, llm *age
 			defer wg.Done()
 
 			// Call searchKeyword for this keyword
-			stats, err := searchKeyword(llm, kw)
+			stats, err := searchKeyword(llm, kw, domain)
 			if err != nil {
 				mu.Lock()
 				errChan <- err
@@ -347,14 +350,14 @@ func generateChatGPTSearchStats(topicStruct ConversationalKeywordTopic, llm *age
 	return aggregatedStats
 }
 
-func injectSearchEngineData(response ConversationalKeywordsResponse, llm *agentpod.LLM) ConversationalKeywordsResponse {
+func injectSearchEngineData(response ConversationalKeywordsResponse, llm *agentpod.LLM, domain string) ConversationalKeywordsResponse {
 	for i := range response.Results {
 		// Create the map if it doesn't exist
 		if response.Results[i].SearchEngines == nil {
 			response.Results[i].SearchEngines = make(map[string]SearchEngineStats)
 		}
 
-		response.Results[i].SearchEngines["ChatGPT"] = generateChatGPTSearchStats(response.Results[i], llm)
+		response.Results[i].SearchEngines["ChatGPT"] = generateChatGPTSearchStats(response.Results[i], llm, domain)
 	}
 	return response
 }
@@ -399,7 +402,7 @@ func HandleConversationalKeywords(c echo.Context, llm *agentpod.LLM) error {
 	}
 
 	// Add dummy search engine data before returning
-	response = injectSearchEngineData(response, llm)
+	response = injectSearchEngineData(response, llm, request.Domain)
 
 	return c.JSON(http.StatusOK, response)
 }
